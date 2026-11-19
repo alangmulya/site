@@ -1,0 +1,266 @@
+---
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import Base from '../../layouts/Base.astro';
+import ProjectCard from '../../components/ProjectCard.astro';
+import { site, ui, profile, areas, projects, experience, certs, achievements, leadership, education, skills, fmt, type Lang } from '../../data/content';
+
+export function getStaticPaths() {
+  return [{ params: { lang: 'id' } }, { params: { lang: 'en' } }];
+}
+
+const lang = Astro.params.lang as Lang;
+const t = ui[lang];
+const tones = ['primary', 'green', 'amber'];
+
+// Cari berkas sertifikat di public/certs (pdf/png/jpg/jpeg/webp)
+const find = (base: string) => {
+  for (const ext of ['pdf', 'png', 'jpg', 'jpeg', 'webp']) {
+    if (existsSync(join(process.cwd(), 'public', 'certs', `${base}.${ext}`))) return { src: `/certs/${base}.${ext}`, ext };
+  }
+  return null;
+};
+const byDateDesc = <T extends { date: string }>(a: T[]) => [...a].sort((x, y) => y.date.localeCompare(x.date));
+const jobs = [...experience].sort((a, b) => b.start.localeCompare(a.start));
+const current = jobs.find((j) => !j.end);
+const statusText = site.openToWork || !current ? t.status : `${t.nowAs} ${current.role[lang]}, ${current.org}`;
+
+// Blok terminal (dibuat di sini supaya kurung kurawal aman)
+const q = (s: string) => `<span class="s">"${s}"</span>`;
+const k = (s: string) => `<span class="k">"${s}"</span>`;
+const json = [
+  '<span class="p">$</span> cat profile.json',
+  '&#123;',
+  `  ${k('name')}: ${q(site.name)},`,
+  `  ${k('role')}: ${q(site.role.en)},`,
+  `  ${k('education')}: ${q(site.education)},`,
+  `  ${k('focus')}: [${site.stack.map(q).join(', ')}],`,
+  `  ${k('location')}: ${q(site.location)},`,
+  `  ${k('open_to_work')}: <span class="n">${site.openToWork}</span>`,
+  '&#125;',
+].join('\n');
+---
+<Base lang={lang}>
+  <section class="hero" id="top">
+    <svg class="topo" viewBox="0 0 400 300" aria-hidden="true">
+      <path d="M60 60 L180 120 L320 50 M180 120 L150 240 L300 220 L320 50 M60 60 L150 240 M300 220 L180 120" fill="none" stroke="currentColor" stroke-width="1.5" />
+      <g><circle cx="60" cy="60" r="7" /><circle cx="180" cy="120" r="9" /><circle cx="320" cy="50" r="7" /><circle cx="150" cy="240" r="7" /><circle cx="300" cy="220" r="7" /></g>
+    </svg>
+    <div class="wrap hero-grid">
+      <div>
+        <p class="status"><i></i>{statusText}</p>
+        <h1>{site.name.split(' ').map((w, i) => (<>{i > 0 && ' '}{site.gothic && w[0] === site.gothic ? <><span class="goth">{w[0]}</span>{w.slice(1)}</> : w}</>))}</h1>
+        <p class="role">{site.role[lang]}</p>
+        <p class="pitch">{profile.pitch[lang]}</p>
+        <div class="cta">
+          <a class="btn primary" href="#contact">{t.contactMe}</a>
+          <a class="btn ghost" href={site.cv} download>{t.downloadCv}</a>
+        </div>
+        <p class="links">
+          <a href={site.linkedin} rel="noopener">LinkedIn</a>
+          {site.github && <a href={site.github} rel="noopener">GitHub</a>}
+          <a href={`mailto:${site.email}`}>Email</a>
+        </p>
+      </div>
+      <figure class="term" aria-label="profile.json">
+        <div class="top"><i></i><i></i><i></i></div>
+        <pre set:html={json} />
+      </figure>
+    </div>
+  </section>
+
+  <section id="about" class="alt">
+    <div class="wrap about">
+      <div>
+        <h2>{t.about}</h2>
+        {profile.about.map((p) => <p>{p[lang]}</p>)}
+      </div>
+      <dl class="facts">
+        {t.facts.map((label, i) => (<><dt>{label}</dt><dd>{profile.facts[i][lang]}</dd></>))}
+      </dl>
+    </div>
+  </section>
+
+  <section id="expertise">
+    <div class="wrap">
+      <h2>{t.expertise}</h2>
+      <div class="areas">
+        {areas.map((a) => (
+          <article class="area" style={`--c:var(--${a.color})`}>
+            <span class="glyph">{a.glyph}</span>
+            <h3>{a.title[lang]}</h3>
+            <p>{a.desc[lang]}</p>
+            <ul class="chips">{a.chips.map((c) => <li>{c}</li>)}</ul>
+          </article>
+        ))}
+      </div>
+      <div class="skillrows">
+        {skills.map((g) => (
+          <div class="srow" style={`--c:var(--${g.color})`}>
+            <h3>{g.name[lang]}</h3>
+            <ul class="chips">{g.items.map((s) => <li>{s}</li>)}</ul>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {projects.length > 0 && (
+    <section id="projects" class="alt">
+      <div class="wrap">
+        <h2>{t.projects}</h2>
+        <div class="grid">{projects.map((p) => <ProjectCard p={p} lang={lang} />)}</div>
+      </div>
+    </section>
+  )}
+
+  <section id="experience" class={projects.length > 0 ? '' : 'alt'}>
+    <div class="wrap">
+      <h2>{t.experience}</h2>
+      {jobs.map((j, i) => (
+        <div class="job" style={`--c:var(--${tones[i % 3]})`}>
+          <p class="when">{fmt(j.start, lang)} – {j.end ? fmt(j.end, lang) : t.present}</p>
+          <div>
+            <h3>{j.role[lang]}</h3>
+            <p class="org">{j.place ? `${j.org}, ${j.place}` : j.org}</p>
+            {j.bullets.length > 0 && <ul>{j.bullets.map((b) => <li>{b[lang]}</li>)}</ul>}
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section id="certs">
+    <div class="wrap">
+      <h2>{t.certs}</h2>
+      <p class="hint">{t.certsHint}</p>
+      <div class="certs">
+        {byDateDesc(certs).map((c) => {
+          const f = find(c.file);
+          const isImg = f && f.ext !== 'pdf';
+          return (
+            <article class="cert">
+              <div class="thumb">
+                {isImg ? <img src={f.src} alt="" loading="lazy" /> : <span class="ext">{f ? 'PDF' : 'CERT'}</span>}
+              </div>
+              <div class="cbody">
+                <h3>{c.title}</h3>
+                <p class="issuer">{c.issuer} · {fmt(c.date, lang)}</p>
+                {c.note && <p class="note">{c.note[lang]}</p>}
+                <div class="cacts">
+                  {f ? (
+                    <>
+                      <button type="button" class="btn small" data-src={f.src} data-type={f.ext === 'pdf' ? 'pdf' : 'img'} data-title={c.title}>{t.preview}</button>
+                      <a href={f.src} download>{t.download}</a>
+                    </>
+                  ) : <span class="soon">{t.soon}</span>}
+                </div>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </div>
+  </section>
+
+  <section id="achievements" class="alt">
+    <div class="wrap two">
+      <div>
+        <h2>{t.achievements}</h2>
+        <ul class="tl">
+          {byDateDesc(achievements).map((a) => (
+            <li><span class="date">{fmt(a.date, lang)}</span><b>{a.title[lang]}</b><span>{a.desc[lang]}</span></li>
+          ))}
+        </ul>
+      </div>
+      <div>
+        <h2>{t.leadership}</h2>
+        <ul class="tl">
+          {leadership.map((l) => (
+            <li><span class="date">{l.period[lang]}</span><b>{l.title[lang]}</b><span class="org2">{l.org}</span><span>{l.desc[lang]}</span></li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="education">
+    <div class="wrap">
+      <h2>{t.education}</h2>
+      <div class="edus">
+        {education.map((e) => (
+          <article class="edu">
+            <span class="date">{fmt(e.start, lang)} – {fmt(e.end, lang)}</span>
+            <h3>{e.title[lang]}</h3>
+            <p class="org2">{e.org}</p>
+            <p>{e.note[lang]}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section id="contact" class="contact">
+    <div class="wrap grid2">
+      <div>
+        <h2>{t.contact}</h2>
+        <p>{site.openToWork ? t.contactText : t.contactTextBusy}</p>
+        <a class="mail" href={`mailto:${site.email}`}>{site.email}</a>
+        <div class="social">
+          <a href={site.linkedin} rel="noopener">LinkedIn</a>
+          {site.github && <a href={site.github} rel="noopener">GitHub</a>}
+        </div>
+      </div>
+      {site.formAction && (
+        <form action={site.formAction} method="POST">
+          <label>{t.name}<input name="nama" required autocomplete="name" /></label>
+          <label>Email<input type="email" name="email" required autocomplete="email" /></label>
+          <label>{t.message}<textarea name="pesan" required></textarea></label>
+          <input class="hp" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true" />
+          <button class="btn" type="submit">{t.send}</button>
+        </form>
+      )}
+    </div>
+  </section>
+
+  <dialog id="cert-dialog" aria-labelledby="cert-title" data-open={t.openTab} data-dl={t.download}>
+    <div class="dlg-head">
+      <h3 id="cert-title"></h3>
+      <button type="button" class="close" aria-label={t.close}>✕</button>
+    </div>
+    <div class="dlg-body" id="cert-body"></div>
+    <div class="dlg-foot"><a id="cert-open" target="_blank" rel="noopener"></a><a id="cert-dl" download></a></div>
+  </dialog>
+
+  <script>
+    const dlg = document.getElementById('cert-dialog') as HTMLDialogElement | null;
+    const body = document.getElementById('cert-body');
+    const title = document.getElementById('cert-title');
+    const openA = document.getElementById('cert-open') as HTMLAnchorElement | null;
+    const dlA = document.getElementById('cert-dl') as HTMLAnchorElement | null;
+    if (dlg && body && title && openA && dlA) {
+      document.querySelectorAll<HTMLButtonElement>('button[data-src]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const { src = '', type = 'img', title: name = '' } = btn.dataset;
+          body.innerHTML = '';
+          if (type === 'pdf') {
+            const f = document.createElement('iframe');
+            f.src = src + '#view=FitH'; f.title = name;
+            body.appendChild(f);
+          } else {
+            const i = document.createElement('img');
+            i.src = src; i.alt = name;
+            body.appendChild(i);
+          }
+          title.textContent = name;
+          openA.href = src; openA.textContent = dlg.dataset.open ?? '';
+          dlA.href = src; dlA.textContent = dlg.dataset.dl ?? '';
+          dlg.showModal();
+        });
+      });
+      dlg.querySelector('.close')?.addEventListener('click', () => dlg.close());
+      dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+      dlg.addEventListener('close', () => { body.innerHTML = ''; });
+    }
+  </script>
+</Base>

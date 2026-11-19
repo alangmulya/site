@@ -1,0 +1,23 @@
+---
+import { kinds, linkLabels, ui, type Lang, type Project } from '../data/content';
+interface Props { p: Project; lang: Lang }
+const { p, lang } = Astro.props;
+const t = ui[lang];
+---
+<article class="proj" data-kind={p.kind}>
+  <div class="shot">
+    <span class="badge">{kinds[p.kind][lang]}</span>
+    <strong>{p.title}</strong>
+  </div>
+  <div class="body">
+    <dl>
+      <div><dt>{t.problem}</dt><dd>{p.problem[lang]}</dd></div>
+      <div><dt>{t.solution}</dt><dd>{p.solution[lang]}</dd></div>
+      <div><dt>{t.result}</dt><dd>{p.result[lang]}</dd></div>
+    </dl>
+    <ul class="tags">{p.stack.map((s) => <li>{s}</li>)}</ul>
+    <div class="acts">
+      {p.links.map((l) => <a href={l.url} target="_blank" rel="noopener">{linkLabels[l.type][lang]}</a>)}
+    </div>
+  </div>
+</article>

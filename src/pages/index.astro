@@ -1,0 +1,21 @@
+---
+import { site } from '../data/content';
+---
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{site.name}</title>
+    <meta name="robots" content="noindex" />
+    <!-- Pilih bahasa sesuai browser: Indonesia untuk pengguna "id", selain itu Inggris -->
+    <script is:inline>
+      var l = (navigator.language || '').toLowerCase().indexOf('id') === 0 ? 'id' : 'en';
+      location.replace('/' + l + '/');
+    </script>
+    <noscript><meta http-equiv="refresh" content="0; url=/id/" /></noscript>
+  </head>
+  <body>
+    <p><a href="/id/">Bahasa Indonesia</a> · <a href="/en/">English</a></p>
+  </body>
+</html>
